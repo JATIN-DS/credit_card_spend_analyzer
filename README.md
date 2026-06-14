@@ -12,18 +12,31 @@ calls the page makes are the normal authenticated requests to **your own** Gmail
 
 ---
 
-## ▶️ Use it instantly (hosted, nothing to install)
+## ▶️ Open the app
 
-The app is hosted for free on GitHub Pages. Just open and bookmark:
+### Option 1 — Hosted (recommended, nothing to install)
 
-### **https://jatin-ds.github.io/credit_card_spend_analyzer/**
+Just open and bookmark this permanent link:
 
-No terminal, no download, no local server — it works from any browser and your
-settings stay saved in that browser. You only need to do the **one‑time Google
-OAuth setup** below once, and when creating the Client ID add
-`https://jatin-ds.github.io` as an Authorized JavaScript origin.
+### 👉 **https://jatin-ds.github.io/credit_card_spend_analyzer/**
 
-> Prefer to run it locally/offline instead? See **[Run locally](#part-2--run-locally-optional)**.
+No terminal, no download, no local server — it works from any browser, on any
+computer, and your settings stay saved in that browser. Do the **one‑time Google
+OAuth setup** ([Part 1](#part-1--create-a-google-oauth-client-id-free-5-min-no-billing))
+once, making sure to add `https://jatin-ds.github.io` as an Authorized JavaScript
+origin on your Client ID.
+
+### Option 2 — Run locally / offline
+
+Prefer to run it on your own machine? See
+**[Part 2 — Run locally](#part-2--run-locally-option-2)**.
+
+> **Does this link work only for me?** The page is public, but it stores **no
+> data and no Client ID** — everything lives only in *your* browser's
+> `localStorage`. So it works for you because your browser already has your
+> Client ID + cards saved. **Any new user** can open the same link and use it
+> too, but they must enter **their own** Google OAuth Client ID (see Part 1) —
+> the app then reads *their* Gmail. Two people never share data or credentials.
 
 ---
 
@@ -54,13 +67,11 @@ OAuth setup** below once, and when creating the Client ID add
 
 ## Quick start (new user)
 
-There are two one‑time pieces of setup: get a Google OAuth Client ID, then run
-the page from `http://localhost:8000`. The in‑app **How to** tab walks through
-the same steps if you prefer to follow along in the UI.
+The only one‑time setup is creating a Google OAuth Client ID so the app can read
+*your* Gmail with your permission. The in‑app **How to** tab walks through the
+same steps if you prefer to follow along in the UI.
 
 ### Part 1 — Create a Google OAuth Client ID (free, ~5 min, no billing)
-
-You need a Client ID so the page can read *your* Gmail with your permission.
 
 1. Go to <https://console.cloud.google.com> and sign in.
 2. **Create a project**: project dropdown (top bar) → **New Project** → name it
@@ -73,18 +84,31 @@ You need a Client ID so the page can read *your* Gmail with your permission.
    - **Scopes**: add `https://www.googleapis.com/auth/gmail.readonly` → Save
    - **Test users**: add your own Gmail address → Save
    - Leave the app in **Testing** mode (no Google verification needed).
-5. **Create the credential**: *APIs & Services → Credentials → Create
-   Credentials → OAuth client ID*
+5. **Create the credential**: open
+   **<https://console.cloud.google.com/apis/credentials>** → **Create
+   Credentials → OAuth client ID**
    - Application type: **Web application**
-   - **Authorized JavaScript origins** → add `https://jatin-ds.github.io` (the
-     hosted app). If you'll also run it locally, add `http://localhost:8000` too.
+   - **Authorized JavaScript origins** → click **Add URI** → add
+     `https://jatin-ds.github.io` (for the hosted app). If you'll also run it
+     locally, **Add URI** again with `http://localhost:8000`.
    - **Create**, then copy the **Client ID** (looks like
      `1234567890-abcd.apps.googleusercontent.com`). No client secret is needed.
+6. Open the app, go to **Settings**, paste the Client ID, and **Save settings**.
 
 > None of these steps ask for a credit card. Billing is only required for paid
 > Google Cloud products, which this app does not use.
 
-### Part 2 — Run locally (optional)
+#### 🔑 Already created your Client ID? Find it again
+
+You don't create a new one each time. To copy your existing Client ID later:
+
+1. Open **<https://console.cloud.google.com/apis/credentials>** (sign in with the
+   same Google account; pick the right project in the top‑bar dropdown).
+2. Under **OAuth 2.0 Client IDs**, click your client's name.
+3. Copy the **Client ID** shown on the right → paste it into the app's
+   **Settings**.
+
+### Part 2 — Run locally (Option 2)
 
 You don't need this if you use the **hosted URL** above. But to run it on your
 own machine (offline), OAuth requires a registered origin, so serve it over
@@ -133,6 +157,33 @@ Open the **Settings** tab and:
 The **Activity log** at the bottom shows exactly what happened per card
 (candidates found, statements kept, totals parsed, and any errors such as a
 wrong password).
+
+---
+
+## Troubleshooting
+
+### "Access blocked: Authorization Error" / `Error 400: origin_mismatch`
+
+This means the URL you opened the app from isn't listed as an **Authorized
+JavaScript origin** on your Client ID. Fix it once:
+
+1. Open **<https://console.cloud.google.com/apis/credentials>** and select the
+   project that owns your Client ID.
+2. Under **OAuth 2.0 Client IDs**, click your client's name to edit it.
+3. Under **Authorized JavaScript origins** → **Add URI**, add the **exact**
+   origin (scheme + host, **no path, no trailing slash**):
+   - Hosted app: `https://jatin-ds.github.io`
+   - Local use: `http://localhost:8000`
+4. **Save**, wait ~1–2 minutes, then hard‑refresh the app (Cmd/Ctrl+Shift+R) and
+   click **Connect Gmail** again.
+
+> Make sure you edit the **same** Client ID that's saved in the app's Settings,
+> and that you put the value under *JavaScript origins* — not *redirect URIs*.
+
+### "This app isn't verified" / Access blocked for a test user
+
+Your Gmail address must be listed as a **Test user** on the consent screen
+(*APIs & Services → OAuth consent screen → Test users*). Add it, then retry.
 
 ---
 
