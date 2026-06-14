@@ -40,6 +40,45 @@ Prefer to run it on your own machine? See
 
 ---
 
+## 🗺️ How to use it — at a glance
+
+In plain words, you do this **once**: get a free "key" from Google (the Client
+ID) so the app is allowed to read your Gmail, paste it into the app, add your
+cards and their PDF passwords, and connect Gmail. After that, **every month you
+just open the link and click Fetch** — no passwords to type again.
+
+```mermaid
+flowchart TD
+    A([Start]) --> B{First time<br/>using this app?}
+
+    B -- "Yes" --> C["<b>1. Get your Google key</b><br/>Create a Google OAuth Client ID<br/>(Part 1 below · ~5 min · free)"]
+    C --> D["<b>2. Open the app</b><br/>jatin-ds.github.io/credit_card_spend_analyzer"]
+    D --> E["<b>3. Set it up once</b><br/>Settings → paste Client ID,<br/>add cards + PDF passwords → Save"]
+    E --> F["<b>4. Connect Gmail</b><br/>click 'Connect Gmail' and<br/>approve read-only access"]
+
+    B -- "No, I'm back" --> R["Open the app link<br/>(your settings are still saved)"]
+    R --> F
+
+    F --> G{"Sign-in blocked?<br/>'Error 400: origin_mismatch'"}
+    G -- "Yes" --> H["Add https://jatin-ds.github.io as an<br/>Authorized JavaScript origin in the<br/>Google Console, then wait 1-2 min<br/>(see Troubleshooting)"]
+    H --> F
+    G -- "No" --> I["<b>5. Click 'Fetch / Refresh'</b>"]
+
+    I --> J([📊 See your combined<br/>spending dashboard])
+
+    classDef start fill:#4ADE80,stroke:#16a34a,color:#06210f;
+    classDef done fill:#6C63FF,stroke:#4f46e5,color:#fff;
+    classDef warn fill:#FBBF24,stroke:#b45309,color:#3a2a04;
+    class A start;
+    class J done;
+    class H warn;
+```
+
+> Steps 1–3 happen **only the first time**. From then on, returning is just:
+> **open the link → Connect Gmail → Fetch**.
+
+---
+
 ## What it does
 
 1. **Fetches** your statement emails from Gmail for each card you configure.
