@@ -61,7 +61,7 @@ const DEFAULT_CARDS = [
   },
 ];
 
-const SUPPORTED_BANKS = ["HDFC", "AXIS", "ICICI", "SBI", "AMEX"];
+const SUPPORTED_BANKS = ["HDFC", "ICICI", "AXIS"];
 const MAX_BILLS_PER_CARD = 18;
 // Upper bound for the Gmail look-back window (months).
 const MAX_LOOKBACK_MONTHS = 20;

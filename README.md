@@ -176,7 +176,7 @@ Open the **Settings** tab and:
    |-------|----------------|
    | **Label** | Any name you like, e.g. `Amazon Pay ICICI`. |
    | **Last 4 digits** | The card's last 4 digits (optional). If set, only statements whose PDF ends in these digits are attributed to this card — this disambiguates multiple cards from the same bank/sender. |
-   | **Bank** | The issuer: HDFC, AXIS, ICICI, SBI, or AMEX. |
+   | **Bank** | The issuer: HDFC, ICICI, or AXIS. |
    | **Sender email match** | *(toggle)* Match emails from a sender address, e.g. `cc.statements@axisbank.com`. Turn on **Multiple senders** if a card's statements arrive from different addresses across months (one address per line). |
    | **Subject match** | *(toggle)* Match emails whose subject contains a phrase, e.g. `ICICI Bank Credit Card Statement for the period`. |
    | **PDF password** | The password your bank uses to encrypt the statement PDF. |
