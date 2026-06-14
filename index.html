@@ -637,6 +637,19 @@
     <section id="howtoView" class="hidden">
       <div class="howto-doc">
         <div class="panel glass">
+          <div class="section-label">Open the app (no install)</div>
+          <div class="caption" style="margin-top:-6px;margin-bottom:14px;">
+            The app is hosted for free on GitHub Pages, so there's nothing to install or run. Just bookmark the link below &mdash; it works from any browser, on any computer, forever.
+          </div>
+          <ol>
+            <li>Open and bookmark: <a href="https://jatin-ds.github.io/credit_card_spend_analyzer/" target="_blank" rel="noopener"><code>https://jatin-ds.github.io/credit_card_spend_analyzer/</code></a></li>
+            <li>Do the one-time Google setup below, then in <strong>Settings</strong> add your card(s) and click <strong>Connect Gmail</strong>.</li>
+            <li>That's it &mdash; your settings stay saved in this browser for next time.</li>
+          </ol>
+          <div class="footnote">Prefer to run it offline on your own machine instead? Download the repo and run <code>python3 -m http.server 8000</code> in that folder, then open <code>http://localhost:8000</code> (and add that origin in Google too).</div>
+        </div>
+
+        <div class="panel glass">
           <div class="section-label">Get your Google OAuth Client ID</div>
           <div class="caption" style="margin-top:-6px;margin-bottom:14px;">
             This lets the app read your Gmail statement PDFs. It's free, no credit card required, and everything stays in your browser.
@@ -646,13 +659,13 @@
             <li>Create a project: click the project dropdown (top bar) &rarr; <strong>New Project</strong> &rarr; name it (e.g. "Statement Analyzer") &rarr; <strong>Create</strong>, then select it.</li>
             <li>Enable the Gmail API: left menu &rarr; <strong>APIs &amp; Services</strong> &rarr; <strong>Library</strong> &rarr; search "Gmail API" &rarr; open it &rarr; <strong>Enable</strong>.</li>
             <li>Configure the OAuth consent screen: <strong>APIs &amp; Services</strong> &rarr; <strong>OAuth consent screen</strong> &rarr; choose <strong>External</strong> &rarr; <strong>Create</strong>. Fill <strong>App name</strong>, <strong>User support email</strong>, and <strong>Developer contact email</strong> &rarr; <strong>Save and Continue</strong>. On the <strong>Scopes</strong> step, just <strong>Save and Continue</strong>. On <strong>Test users</strong>, click <strong>Add Users</strong> and add your own Gmail address (and any others who will use the app) &rarr; <strong>Save</strong>. (The app stays in "Testing" mode; only listed test users can connect.)</li>
-            <li>Create the credential: <strong>APIs &amp; Services</strong> &rarr; <strong>Credentials</strong> &rarr; <strong>Create Credentials</strong> &rarr; <strong>OAuth client ID</strong> &rarr; Application type: <strong>Web application</strong> &rarr; give it a name. Under "Authorized JavaScript origins" click <strong>Add URI</strong> and enter the EXACT origin where you open this app (for local use, e.g. <code>http://localhost:8000</code>) &rarr; <strong>Create</strong>.</li>
+            <li>Create the credential: <strong>APIs &amp; Services</strong> &rarr; <strong>Credentials</strong> &rarr; <strong>Create Credentials</strong> &rarr; <strong>OAuth client ID</strong> &rarr; Application type: <strong>Web application</strong> &rarr; give it a name. Under "Authorized JavaScript origins" click <strong>Add URI</strong> and enter <code>https://jatin-ds.github.io</code> (the hosted app). If you also run it locally, click <strong>Add URI</strong> again and add <code>http://localhost:8000</code>. Then &rarr; <strong>Create</strong>.</li>
             <li>Copy the Client ID (it looks like <code>1234567890-abc.apps.googleusercontent.com</code>).</li>
             <li>Go to the <strong>Settings</strong> tab &rarr; paste it into "Step 1 &middot; Google OAuth Client ID" &rarr; <strong>Save settings</strong> &rarr; click "Step 2 &middot; Connect Gmail" and grant read-only Gmail access.</li>
           </ol>
           <div class="section-label" style="margin-top:20px;">Tips</div>
           <ul>
-            <li>The Authorized JavaScript origin must match your URL exactly (scheme + host + port). If you open the file via <code>file://</code>, serve it instead with <code>python3 -m http.server 8000</code> and add <code>http://localhost:8000</code>.</li>
+            <li>The Authorized JavaScript origin must match your URL exactly. For the hosted app that's <code>https://jatin-ds.github.io</code> (no path, no trailing slash). For local use it's <code>http://localhost:8000</code>.</li>
             <li>If you see "Access blocked / app isn't verified", make sure your email is added as a <strong>Test user</strong> (or publish the consent screen).</li>
             <li>Your Client ID, tokens and PDF passwords are stored only in your browser's <code>localStorage</code> &mdash; nothing is sent anywhere except Google.</li>
           </ul>

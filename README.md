@@ -12,6 +12,21 @@ calls the page makes are the normal authenticated requests to **your own** Gmail
 
 ---
 
+## ▶️ Use it instantly (hosted, nothing to install)
+
+The app is hosted for free on GitHub Pages. Just open and bookmark:
+
+### **https://jatin-ds.github.io/credit_card_spend_analyzer/**
+
+No terminal, no download, no local server — it works from any browser and your
+settings stay saved in that browser. You only need to do the **one‑time Google
+OAuth setup** below once, and when creating the Client ID add
+`https://jatin-ds.github.io` as an Authorized JavaScript origin.
+
+> Prefer to run it locally/offline instead? See **[Run locally](#part-2--run-locally-optional)**.
+
+---
+
 ## What it does
 
 1. **Fetches** your statement emails from Gmail for each card you configure.
@@ -61,17 +76,19 @@ You need a Client ID so the page can read *your* Gmail with your permission.
 5. **Create the credential**: *APIs & Services → Credentials → Create
    Credentials → OAuth client ID*
    - Application type: **Web application**
-   - **Authorized JavaScript origins** → add `http://localhost:8000`
+   - **Authorized JavaScript origins** → add `https://jatin-ds.github.io` (the
+     hosted app). If you'll also run it locally, add `http://localhost:8000` too.
    - **Create**, then copy the **Client ID** (looks like
      `1234567890-abcd.apps.googleusercontent.com`). No client secret is needed.
 
 > None of these steps ask for a credit card. Billing is only required for paid
 > Google Cloud products, which this app does not use.
 
-### Part 2 — Run the app
+### Part 2 — Run locally (optional)
 
-OAuth requires a registered origin, so the page must be served over
-`http://localhost:8000` (not opened as a `file://` page).
+You don't need this if you use the **hosted URL** above. But to run it on your
+own machine (offline), OAuth requires a registered origin, so serve it over
+`http://localhost:8000` (not as a `file://` page):
 
 ```bash
 # from the project folder
