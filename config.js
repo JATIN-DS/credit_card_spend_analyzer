@@ -62,7 +62,9 @@ const DEFAULT_CARDS = [
 ];
 
 const SUPPORTED_BANKS = ["HDFC", "AXIS", "ICICI", "SBI", "AMEX"];
-const MAX_BILLS_PER_CARD = 6;
+const MAX_BILLS_PER_CARD = 18;
+// Upper bound for the Gmail look-back window (months).
+const MAX_LOOKBACK_MONTHS = 20;
 // How many recent statements to fetch per card. This is a single global value
 // applied uniformly to every card (not per-card), chosen right before fetching.
 const DEFAULT_STATEMENTS_COUNT = 1;
@@ -117,15 +119,13 @@ function setActiveCardIds(ids) {
 function getLookbackMonths() {
   const raw = localStorage.getItem(STORAGE_KEYS.lookback);
   const n = parseInt(raw, 10);
-  return Number.isFinite(n) && n > 0 ? n : DEFAULT_LOOKBACK_MONTHS;
+  return Number.isFinite(n) && n > 0 ? Math.min(n, MAX_LOOKBACK_MONTHS) : DEFAULT_LOOKBACK_MONTHS;
 }
 
 function setLookbackMonths(months) {
   const n = parseInt(months, 10);
-  localStorage.setItem(
-    STORAGE_KEYS.lookback,
-    String(Number.isFinite(n) && n > 0 ? n : DEFAULT_LOOKBACK_MONTHS)
-  );
+  const safe = Number.isFinite(n) && n > 0 ? Math.min(n, MAX_LOOKBACK_MONTHS) : DEFAULT_LOOKBACK_MONTHS;
+  localStorage.setItem(STORAGE_KEYS.lookback, String(safe));
 }
 
 // Global statements-to-fetch-per-card count (1..MAX_BILLS_PER_CARD).
@@ -195,6 +195,7 @@ export {
   DEFAULT_LOOKBACK_MONTHS,
   SUPPORTED_BANKS,
   MAX_BILLS_PER_CARD,
+  MAX_LOOKBACK_MONTHS,
   DEFAULT_STATEMENTS_COUNT,
   getStatementsCount,
   setStatementsCount,
