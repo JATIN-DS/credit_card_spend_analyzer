@@ -104,6 +104,28 @@ flowchart TD
 
 ---
 
+## Supported banks
+
+> ⚠️ Dedicated statement‑extraction logic currently exists for **only these
+> banks**:
+
+| Bank | Extraction |
+|------|------------|
+| **HDFC** | ✅ Dedicated parser |
+| **ICICI** | ✅ Dedicated parser |
+| **AXIS** | ✅ Dedicated parser |
+| Any other bank | ⚠️ Not supported yet |
+
+> **Important:** For banks other than HDFC, ICICI, and Axis, fetching and parsing
+> **may not work properly** — totals, due dates, or transactions can be misread
+> or missed entirely, because the statement layout hasn't been programmed in.
+> To use another bank reliably, you must **add its extraction logic to the
+> backend code** first — see
+> **[Adding a new bank (extraction logic)](#adding-a-new-bank-extraction-logic)**
+> below.
+
+---
+
 ## Quick start (new user)
 
 The only one‑time setup is creating a Google OAuth Client ID so the app can read
@@ -239,30 +261,43 @@ Your Gmail address must be listed as a **Test user** on the consent screen
 
 ---
 
-## Adding or tuning a bank parser
+## Adding a new bank (extraction logic)
 
-Statement layouts differ per bank, so each bank has its own logic in
-`py/parsers.py`. The dedicated ICICI and HDFC parsers reconstruct the summary box
-(total/minimum due, due date, billing period) and the multi‑page transaction
-table; other banks fall back to a generic `date … merchant … amount` heuristic.
+Only **HDFC, ICICI, and Axis** have dedicated extraction logic today (see
+[Supported banks](#supported-banks)). To make another bank work reliably you
+must add a parser for it in the backend code (`py/parsers.py`) and list the bank
+in the dropdown. Here's the full process:
 
-To add a new bank or improve accuracy, open a real statement as reference and
-edit/add its parser in `py/parsers.py`. Keep the normalized shapes so the rest of
-the app keeps working:
+1. **Get a sample statement's raw text.** In the app, add the card with the
+   nearest bank selected and click **Fetch** once. Open your browser's DevTools
+   **Console** — the app prints the full extracted text of each statement under a
+   block labelled `RAW EXTRACTED TEXT`. Copy that text for one statement.
+2. **Write the parser** in `py/parsers.py`. Add a `parse_<bank>(extracted,
+   card_label)` function (use the existing `parse_hdfc` / `parse_icici` as
+   references) that returns the **normalized shapes** below, then register it in
+   the parser registry so dispatch picks it up:
 
-```python
-# one transaction
-{"date": "YYYY-MM-DD", "merchant": str, "amount": float,
- "type": "debit" | "credit", "card": label}
+   ```python
+   # one transaction
+   {"date": "YYYY-MM-DD", "merchant": str, "amount": float,
+    "type": "debit" | "credit", "card": label}
 
-# statement summary
-{"card": label, "bank": str, "totalDue": float | None,
- "minDue": float | None, "dueDate": "YYYY-MM-DD" | None,
- "statementPeriod": str | None}
-```
+   # statement summary
+   {"card": label, "bank": str, "totalDue": float | None,
+    "minDue": float | None, "dueDate": "YYYY-MM-DD" | None,
+    "statementPeriod": str | None}
+   ```
+3. **Add the bank to the dropdown.** Add the bank's uppercase code to
+   `SUPPORTED_BANKS` in `config.js` (e.g. `["HDFC", "ICICI", "AXIS", "SBI"]`).
+4. **Reload** the app. Dispatch is by the card's **Bank** field, so the new bank
+   now uses your parser — no other files need changing.
 
-The **How to** tab in the app contains a step‑by‑step guide (including how to use
-an AI coding assistant against a sample statement) for adding new bank logic.
+> 💡 **Easiest path:** open this project in an AI coding editor (e.g. Cursor) and
+> ask it: *"Add an extraction parser for &lt;BANK&gt; credit card statements in
+> `py/parsers.py`. Here is the raw extracted statement text: &lt;paste&gt;.
+> Follow the same normalized output shape as `parse_icici` / `parse_hdfc`,
+> register it, and add &lt;BANK&gt; to `SUPPORTED_BANKS` in `config.js`."*
+> The in‑app **How to** tab contains this same guide.
 
 ---
 
