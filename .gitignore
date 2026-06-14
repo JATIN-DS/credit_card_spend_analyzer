@@ -1,0 +1,9 @@
+# Python bytecode cache (from local Pyodide-equivalent runs / tooling)
+__pycache__/
+*.py[cod]
+
+# OS / editor cruft
+.DS_Store
+*.swp
+.idea/
+.vscode/

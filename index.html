@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Statement Studio — Credit Card Analyzer</title>
+
+  <!-- Third-party libraries, all free, loaded from CDNs -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <style>
+    /* ===================== Liquid Glass design system ===================== */
+    /* Pure-neutral dark theme: every background is a true gray (R=G=B), no
+       hue, no colored gradients/glows. Accent hues live only on interactive
+       elements. See dark-mode-prompt for the full spec. */
+    :root[data-theme="dark"] {
+      --bg-base: #0a0a0a;
+      --bg-base-2: #111111;
+      --grad-1: transparent;
+      --grad-2: transparent;
+      --glass-bg: #111111;
+      --glass-bg-strong: #1a1a1a;
+      --glass-border: #2e2e2e;
+      --glass-shine: transparent;
+      --input-bg: #222222;
+      --input-border: #2e2e2e;
+      --row-hover: #1a1a1a;
+      --hairline: #2e2e2e;
+      --accent-primary: #7c5cfc;
+      --accent-primary-hover: #6a4de0;
+      --accent-secondary: #9b82fd;
+      --accent-glow: transparent;
+      --text-primary: #f0f0f0;
+      --text-secondary: #a0a0a0;
+      --text-muted: #555555;
+      --danger: #e74c3c;
+      --danger-strong: #c0392b;
+      --success: #27ae60;
+      --warning: #e67e22;
+      --on-accent: #ffffff;
+      --tint-purple: transparent;
+      --tint-sky: transparent;
+      --tint-amber: transparent;
+      --tint-green: transparent;
+      --shadow-depth: 0 2px 8px rgba(0,0,0,0.5);
+      --chart-text: #f0f0f0;
+      --chart-sub: #a0a0a0;
+      --chart-grid: rgba(255,255,255,0.06);
+    }
+    :root[data-theme="light"] {
+      --bg-base: #E8EBF0;
+      --bg-base-2: #DDE1E8;
+      --grad-1: rgba(91,82,232,0.10);
+      --grad-2: rgba(14,165,233,0.07);
+      --glass-bg: rgba(255,255,255,0.55);
+      --glass-bg-strong: rgba(255,255,255,0.70);
+      --glass-border: rgba(255,255,255,0.90);
+      --glass-shine: rgba(255,255,255,0.75);
+      --input-bg: rgba(255,255,255,0.65);
+      --input-border: rgba(0,0,0,0.10);
+      --row-hover: rgba(0,0,0,0.03);
+      --hairline: rgba(0,0,0,0.08);
+      --accent-primary: #5B52E8;
+      --accent-secondary: #7C73F5;
+      --accent-glow: rgba(91,82,232,0.15);
+      --text-primary: #111118;
+      --text-secondary: rgba(17,17,24,0.58);
+      --text-muted: rgba(17,17,24,0.34);
+      --danger: #E53E3E;
+      --success: #16A34A;
+      --on-accent: #FFFFFF;
+      --tint-purple: rgba(91,82,232,0.10);
+      --tint-sky: rgba(14,165,233,0.10);
+      --tint-amber: rgba(245,158,11,0.12);
+      --tint-green: rgba(22,163,74,0.10);
+      --shadow-depth: 0 8px 28px rgba(31,41,55,0.12), 0 2px 8px rgba(31,41,55,0.08);
+      --chart-text: #111118;
+      --chart-sub: rgba(17,17,24,0.58);
+      --chart-grid: rgba(17,17,24,0.10);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at 20% 25%, var(--grad-1) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 75%, var(--grad-2) 0%, transparent 55%),
+        var(--bg-base);
+      background-attachment: fixed;
+    }
+
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      box-shadow: 0 1px 0 0 var(--glass-shine) inset, var(--shadow-depth);
+      position: relative;
+    }
+
+    /* ----- Header ----- */
+    header {
+      max-width: 960px; margin: 0 auto;
+      padding: 28px 24px 8px;
+      display: flex; align-items: flex-start; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .brand h1 { font-size: 28px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+    .brand .sub { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+    .header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+    .mode-toggle {
+      display: flex; align-items: center; gap: 2px;
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: 999px; padding: 4px;
+      backdrop-filter: blur(12px);
+    }
+    .mode-toggle-option {
+      padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 500;
+      cursor: pointer; border: none; background: transparent; color: var(--text-secondary);
+      transition: background .2s ease, color .2s ease; display: flex; align-items: center; gap: 6px;
+    }
+    .mode-toggle-option.active { background: var(--accent-primary); color: var(--on-accent); box-shadow: 0 0 12px var(--accent-glow); }
+
+    .tabs-nav { display: flex; gap: 2px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 999px; padding: 4px; backdrop-filter: blur(12px); }
+    .nav-tab {
+      padding: 7px 16px; border-radius: 999px; font-size: 13px; font-weight: 500;
+      cursor: pointer; border: none; background: transparent; color: var(--text-secondary);
+      transition: background .2s ease, color .2s ease;
+    }
+    .nav-tab:hover { color: var(--text-primary); }
+    .nav-tab.active { background: var(--accent-primary); color: var(--on-accent); box-shadow: 0 0 12px var(--accent-glow); }
+
+    .container { padding: 16px 24px 56px; max-width: 960px; margin: 0 auto; }
+
+    /* ----- Buttons ----- */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      color: var(--on-accent); border: none; border-radius: 10px; padding: 11px 22px;
+      font-size: 14px; font-weight: 500; cursor: pointer; letter-spacing: 0.01em;
+      box-shadow: 0 0 20px var(--accent-glow), 0 4px 12px rgba(0,0,0,0.25);
+      transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+    }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 0 28px var(--accent-glow), 0 6px 16px rgba(0,0,0,0.3); }
+    .btn-primary:active:not(:disabled) { transform: scale(0.97); opacity: .9; }
+    .btn-primary:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+
+    .btn-secondary {
+      background: transparent; color: var(--accent-secondary);
+      border: 1px solid rgba(108,99,255,0.35); border-radius: 10px; padding: 10px 18px;
+      font-size: 14px; font-weight: 500; cursor: pointer; backdrop-filter: blur(8px);
+      transition: background .2s ease, border-color .2s ease, opacity .15s ease;
+    }
+    .btn-secondary:hover:not(:disabled) { background: rgba(108,99,255,0.10); border-color: var(--accent-primary); }
+    .btn-secondary:disabled { opacity: .45; cursor: not-allowed; }
+
+    .btn-icon-danger {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: rgba(255,107,107,0.12); border: 1px solid rgba(255,107,107,0.25);
+      color: var(--danger); display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 15px; line-height: 1; transition: background .2s ease, transform .15s ease;
+    }
+    .btn-icon-danger:hover { background: rgba(255,107,107,0.25); transform: scale(1.1); }
+
+    .link-btn { background: none; border: none; color: var(--accent-secondary); cursor: pointer; font-size: 13px; padding: 0; text-decoration: underline; }
+
+    .btn-clear {
+      background: transparent; color: var(--text-secondary);
+      border: 1px solid var(--glass-border); border-radius: 8px; padding: 6px 14px;
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      transition: color .2s ease, border-color .2s ease, background .2s ease, opacity .15s ease;
+    }
+    .btn-clear:hover:not(:disabled) { color: var(--text-primary); border-color: var(--accent-secondary); background: var(--row-hover); }
+    .btn-clear:disabled { opacity: .4; cursor: not-allowed; }
+
+    .panel-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+
+    /* ----- Inputs ----- */
+    input, select {
+      background: var(--input-bg); border: 1px solid var(--input-border);
+      border-radius: 10px; padding: 10px 14px; font-size: 14px; color: var(--text-primary);
+      backdrop-filter: blur(8px); transition: border-color .2s ease, box-shadow .2s ease;
+      outline: none; width: 100%;
+    }
+    input:focus, select:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 3px var(--accent-glow); }
+    input::placeholder { color: var(--text-muted); }
+    select {
+      appearance: none; -webkit-appearance: none; padding-right: 36px;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23A78BFA' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+      background-repeat: no-repeat; background-position: right 12px center;
+    }
+
+    /* ----- Panels / sections ----- */
+    .panel { padding: 22px 24px; margin-bottom: 24px; }
+    .hidden { display: none !important; }
+    .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 16px; }
+    .field { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; }
+    .full-input { margin-bottom: 18px; }
+    .caption { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+    .footnote { font-size: 12px; color: var(--text-muted); margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--hairline); display: flex; align-items: center; gap: 8px; }
+
+    /* ----- Connection bar ----- */
+    .conn-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 20px; margin-bottom: 12px; flex-wrap: wrap; }
+    .conn-status { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--text-muted); box-shadow: 0 0 0 3px rgba(255,255,255,0.04); }
+    .dot.on { background: var(--success); box-shadow: 0 0 10px rgba(74,222,128,0.6); }
+    .dot.off { background: var(--danger); }
+    .conn-meta { color: var(--text-secondary); font-size: 12px; margin-left: 4px; }
+    .auth-note {
+      font-size: 12px; color: var(--text-secondary); margin: 0 0 22px;
+      padding: 10px 14px; border-radius: 10px;
+      background: var(--tint-amber); border: 1px solid rgba(251,191,36,0.22);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* ----- Add row / chips ----- */
+    .add-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .add-field { display: flex; flex-direction: column; gap: 6px; }
+    .add-field .field { margin-bottom: 0; }
+    .card-select { min-width: 230px; }
+    .bills-select { width: 90px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 4px; }
+    .chip { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 12px; background: var(--tint-purple); border: 1px solid rgba(108,99,255,0.28); }
+    .chip-main { display: flex; flex-direction: column; line-height: 1.25; }
+    .chip-label { font-weight: 600; font-size: 13px; }
+    .chip-sub { font-size: 11px; color: var(--text-secondary); }
+    .chip.fetching { opacity: .65; }
+    .fetch-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--hairline); }
+    .status-text { font-size: 13px; color: var(--text-secondary); }
+
+    /* ----- View switcher (segmented) ----- */
+    .view-switch-row { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+    .segmented { display: inline-flex; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 4px; gap: 2px; backdrop-filter: blur(12px); }
+    .seg { padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--text-secondary); transition: background .2s ease, color .2s ease; }
+    .seg:hover { color: var(--text-primary); }
+    .seg.active { background: var(--accent-primary); color: var(--on-accent); box-shadow: 0 0 12px var(--accent-glow); }
+    .view-hint { font-size: 12px; color: var(--text-muted); }
+
+    /* ----- Stat / KPI cards ----- */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+    .stat-card { padding: 20px 22px; border-radius: 18px; display: flex; flex-direction: column; gap: 6px; }
+    .stat-card.t-purple { background: linear-gradient(135deg, var(--tint-purple), transparent); }
+    .stat-card.t-sky { background: linear-gradient(135deg, var(--tint-sky), transparent); }
+    .stat-card.t-amber { background: linear-gradient(135deg, var(--tint-amber), transparent); }
+    .stat-card.t-green { background: linear-gradient(135deg, var(--tint-green), transparent); }
+    .stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); }
+    .stat-value { font-size: 27px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1; word-break: break-word; }
+    .stat-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+    .note { font-size: 13px; color: var(--text-secondary); line-height: 1.5; background: var(--tint-amber); border: 1px solid rgba(251,191,36,0.22); border-radius: 12px; padding: 11px 15px; margin-bottom: 22px; }
+    .note strong { color: var(--text-primary); }
+
+    /* ----- Summary cards ----- */
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-bottom: 22px; }
+    .summary-card { padding: 18px; border-radius: 16px; }
+    .summary-bank { font-weight: 600; margin-bottom: 12px; font-size: 14px; }
+    .summary-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); padding: 4px 0; }
+    .summary-row strong { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+    /* ----- Charts ----- */
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 16px; margin-bottom: 22px; }
+    .chart-box { padding: 16px; border-radius: 16px; height: 330px; display: flex; flex-direction: column; }
+    .chart-wrap { position: relative; flex: 1; min-height: 0; }
+
+    /* ----- Transactions table ----- */
+    .panel-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .panel-head h2 { margin: 0; font-size: 16px; font-weight: 600; }
+    .tabs { display: inline-flex; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 10px; padding: 3px; gap: 2px; }
+    .tab { background: transparent; color: var(--text-secondary); border: none; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    .tab:hover { color: var(--text-primary); }
+    .tab.active { background: var(--accent-primary); color: var(--on-accent); }
+    .pill { font-size: 11px; padding: 3px 10px; border-radius: 999px; background: var(--glass-bg-strong); border: 1px solid var(--glass-border); color: var(--text-secondary); margin-left: auto; }
+    .table-scroll { max-height: 440px; overflow: auto; border-radius: 10px; }
+    .txn-table { width: 100%; border-collapse: collapse; }
+    .txn-table th { position: sticky; top: 0; backdrop-filter: blur(12px); background: var(--glass-bg-strong); color: var(--text-muted); font-weight: 600; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--hairline); }
+    .txn-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--hairline); white-space: nowrap; }
+    .txn-table tr:last-child td { border-bottom: none; }
+    .txn-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .amt-debit { color: var(--danger); }
+    .amt-credit { color: var(--success); }
+    .cat-tag { font-size: 11px; padding: 2px 8px; border-radius: 8px; background: var(--glass-bg-strong); border: 1px solid var(--glass-border); color: var(--text-secondary); }
+    .merchant-cell { font-weight: 500; }
+    .merchant-raw { display: block; font-size: 11px; color: var(--text-muted); font-weight: 400; }
+
+    /* ----- Grouped view ----- */
+    .group-card { padding: 20px 22px; margin-bottom: 18px; border-radius: 16px; }
+    .group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    .group-title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+    .group-meta { font-size: 12px; color: var(--text-secondary); }
+    .group-stats { display: flex; flex-wrap: wrap; gap: 22px; margin-bottom: 16px; }
+    .group-stat .stat-label { margin-bottom: 2px; }
+    .group-stat .gv { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    /* ----- Saved cards table ----- */
+    .table-scroll-x { overflow-x: auto; }
+    table.cards { width: 100%; border-collapse: collapse; min-width: 740px; table-layout: fixed; }
+    table.cards th { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); padding: 0 6px 9px; border-bottom: 1px solid var(--hairline); text-align: left; vertical-align: bottom; }
+    table.cards td { padding: 6px; vertical-align: top; }
+    table.cards tr:hover td { background: var(--row-hover); }
+    /* Compact controls so every column (incl. password) fits without scrolling. */
+    table.cards td input, table.cards td select, table.cards td textarea { font-size: 12px; padding: 7px 8px; border-radius: 8px; }
+    table.cards td select { padding-right: 24px; background-position: right 7px center; }
+    /* Column sizing tuned so all 7 columns fit the ~860px panel width. */
+    table.cards th:nth-child(1), table.cards td:nth-child(1) { width: 116px; }
+    table.cards th:nth-child(2), table.cards td:nth-child(2) { width: 70px; }
+    table.cards th:nth-child(3), table.cards td:nth-child(3) { width: 84px; }
+    table.cards th:nth-child(4), table.cards td:nth-child(4) { width: 170px; }
+    table.cards th:nth-child(5), table.cards td:nth-child(5) { width: 196px; }
+    table.cards th:nth-child(6), table.cards td:nth-child(6) { width: 100px; }
+    table.cards th:nth-child(7), table.cards td:nth-child(7) { width: 34px; }
+    table.cards .last4-input { letter-spacing: 1px; text-align: center; font-variant-numeric: tabular-nums; }
+    table.cards .match-toggle { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 7px; cursor: pointer; white-space: nowrap; user-select: none; }
+    table.cards .match-toggle input { width: auto; margin: 0; cursor: pointer; }
+    table.cards .multi-toggle { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-muted); margin-bottom: 6px; cursor: pointer; white-space: nowrap; user-select: none; }
+    table.cards .multi-toggle input { width: auto; margin: 0; cursor: pointer; }
+    table.cards .senders-text { width: 100%; resize: vertical; font-family: inherit; line-height: 1.4; }
+    .saved-flash { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: #16a34a; opacity: 0; transform: translateX(-4px); transition: opacity .2s ease, transform .2s ease; pointer-events: none; }
+    .saved-flash::before { content: "\2713"; font-weight: 700; }
+    .saved-flash.show { opacity: 1; transform: translateX(0); }
+
+    /* ----- Empty state ----- */
+    .empty-state { text-align: center; padding: 64px 20px; color: var(--text-secondary); }
+    .empty-emoji { font-size: 44px; }
+    .empty-title { font-size: 19px; font-weight: 600; color: var(--text-primary); margin-top: 10px; }
+    .empty-sub { font-size: 14px; margin-top: 6px; }
+
+    /* ----- Log ----- */
+    #log { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px; height: 170px; overflow-y: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    .log-line { white-space: pre-wrap; color: var(--text-secondary); }
+    .log-success { color: var(--success); }
+    .log-error { color: var(--danger); }
+    .log-warn { color: #FBBF24; }
+    a { color: var(--accent-secondary); }
+
+    /* ----- Boot / loading overlay ----- */
+    #boot {
+      position: fixed; inset: 0; z-index: 1000;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 22px; padding: 24px;
+      background:
+        radial-gradient(ellipse at 30% 30%, var(--grad-1) 0%, transparent 55%),
+        radial-gradient(ellipse at 75% 70%, var(--grad-2) 0%, transparent 55%),
+        var(--bg-base);
+      transition: opacity .5s ease;
+    }
+    #boot.fade-out { opacity: 0; pointer-events: none; }
+    .boot-logo { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+    .boot-logo .accent { background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .boot-sub { color: var(--text-secondary); font-size: 13px; margin-top: -10px; }
+    .boot-bar-wrap {
+      width: min(380px, 80vw); padding: 18px 20px; border-radius: 16px;
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      backdrop-filter: blur(24px) saturate(180%); box-shadow: var(--shadow-depth);
+    }
+    .boot-track { height: 8px; border-radius: 999px; background: var(--input-bg); overflow: hidden; border: 1px solid var(--glass-border); }
+    .boot-fill {
+      height: 100%; width: 0%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+      box-shadow: 0 0 14px var(--accent-glow);
+      transition: width .45s cubic-bezier(.4,0,.2,1);
+    }
+    .boot-label { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 12px; color: var(--text-secondary); }
+    .boot-pct { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary); }
+
+    /* ----- Spinner (in buttons / status) ----- */
+    .spinner {
+      width: 14px; height: 14px; border-radius: 50%; display: inline-block; vertical-align: -2px;
+      border: 2px solid rgba(255,255,255,0.35); border-top-color: var(--on-accent);
+      animation: spin .7s linear infinite; margin-right: 8px;
+    }
+    .status-text .spinner { border-color: var(--glass-border); border-top-color: var(--accent-secondary); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ----- Statements-to-fetch control ----- */
+    .count-select, .count-input { width: 96px; }
+    .controls-row { margin-bottom: 6px; }
+    .step-hint { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); }
+
+    /* ----- Month → card breakdown ----- */
+    .month-section { margin-bottom: 26px; }
+    .month-head { display: flex; align-items: baseline; gap: 12px; margin: 4px 2px 12px; flex-wrap: wrap; }
+    .month-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+    .month-meta { font-size: 12px; color: var(--text-secondary); }
+    .mc-card { margin-bottom: 12px; border-radius: 14px; overflow: hidden; }
+    .mc-head {
+      width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+      padding: 14px 18px; background: transparent; border: none; cursor: pointer; text-align: left; color: inherit;
+      transition: background .2s ease;
+    }
+    .mc-head:hover { background: var(--row-hover); }
+    .mc-left { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .mc-name { font-weight: 600; font-size: 14px; }
+    .mc-card-end { font-weight: 600; font-size: 11px; letter-spacing: 0.4px; color: var(--text-secondary); padding: 2px 8px; border-radius: 999px; background: var(--glass-bg-strong); border: 1px solid var(--glass-border); margin-left: 6px; white-space: nowrap; vertical-align: middle; }
+    .mc-sub { font-size: 12px; color: var(--text-secondary); }
+    .mc-right { display: flex; align-items: center; gap: 22px; flex-shrink: 0; }
+    .mc-metric { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; line-height: 1.15; }
+    .mc-metric-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); white-space: nowrap; }
+    .mc-metric-value { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); white-space: nowrap; }
+    .mc-chevron { color: var(--text-muted); transition: transform .3s ease; font-size: 12px; }
+    .mc-card.open .mc-chevron { transform: rotate(180deg); }
+    .mc-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .32s cubic-bezier(.4,0,.2,1); }
+    .mc-card.open .mc-collapse { grid-template-rows: 1fr; }
+    .mc-collapse-inner { overflow: hidden; min-height: 0; }
+    .mc-collapse .table-scroll { max-height: 360px; border-top: 1px solid var(--hairline); border-radius: 0; }
+
+    /* ----- Animations ----- */
+    @media (prefers-reduced-motion: no-preference) {
+      .panel, .stat-card, .group-card, .summary-card, .chart-box, .conn-bar { animation: fadeInUp .4s ease both; }
+      .kpi-grid > :nth-child(1), .summary-grid > :nth-child(1), .charts-grid > :nth-child(1) { animation-delay: 0ms; }
+      .kpi-grid > :nth-child(2), .summary-grid > :nth-child(2), .charts-grid > :nth-child(2) { animation-delay: 60ms; }
+      .kpi-grid > :nth-child(3), .summary-grid > :nth-child(3), .charts-grid > :nth-child(3) { animation-delay: 120ms; }
+      .kpi-grid > :nth-child(4), .summary-grid > :nth-child(4), .charts-grid > :nth-child(4) { animation-delay: 180ms; }
+      .kpi-grid > :nth-child(5), .summary-grid > :nth-child(5) { animation-delay: 240ms; }
+      .kpi-grid > :nth-child(6), .summary-grid > :nth-child(6) { animation-delay: 300ms; }
+      @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes glow-pulse { 0%,100% { box-shadow: 0 0 20px var(--accent-glow), 0 4px 12px rgba(0,0,0,0.25); } 50% { box-shadow: 0 0 36px var(--accent-glow), 0 4px 12px rgba(0,0,0,0.25); } }
+      .btn-primary.pulse:not(:disabled) { animation: glow-pulse 3s ease-in-out infinite; }
+    }
+
+    /* ===== Pure-neutral dark-mode component overrides ===== */
+    /* Flat opaque surfaces (no translucency / backdrop tint). */
+    :root[data-theme="dark"] .glass,
+    :root[data-theme="dark"] .mode-toggle,
+    :root[data-theme="dark"] .tabs-nav,
+    :root[data-theme="dark"] .segmented,
+    :root[data-theme="dark"] .tabs,
+    :root[data-theme="dark"] .txn-table th,
+    :root[data-theme="dark"] .btn-secondary,
+    :root[data-theme="dark"] input,
+    :root[data-theme="dark"] select {
+      backdrop-filter: none; -webkit-backdrop-filter: none;
+    }
+    /* Primary button: flat accent, no glow. */
+    :root[data-theme="dark"] .btn-primary { background: var(--accent-primary); box-shadow: none; }
+    :root[data-theme="dark"] .btn-primary:hover:not(:disabled) { background: var(--accent-primary-hover); box-shadow: none; transform: translateY(-1px); }
+    :root[data-theme="dark"] .btn-primary.pulse:not(:disabled) { animation: none; }
+    /* Secondary button: neutral outline. */
+    :root[data-theme="dark"] .btn-secondary { color: var(--text-primary); border-color: var(--glass-border); }
+    :root[data-theme="dark"] .btn-secondary:hover:not(:disabled) { background: var(--glass-bg-strong); border-color: var(--border-focus, #555555); }
+    /* Danger circle: solid red. */
+    :root[data-theme="dark"] .btn-icon-danger { background: var(--danger-strong); border-color: var(--danger-strong); color: #ffffff; }
+    :root[data-theme="dark"] .btn-icon-danger:hover { background: var(--danger); transform: scale(1.1); }
+    /* Neutral focus ring (subtle purple tint allowed on interactive inputs). */
+    :root[data-theme="dark"] input:focus,
+    :root[data-theme="dark"] select:focus { box-shadow: 0 0 0 2px rgba(124,92,252,0.25); }
+    /* Neutral chips, notes and status dot (no colored fills / glows). */
+    :root[data-theme="dark"] .chip { background: var(--glass-bg-strong); border-color: var(--glass-border); }
+    :root[data-theme="dark"] .auth-note,
+    :root[data-theme="dark"] .note { background: var(--glass-bg-strong); border-color: var(--glass-border); color: var(--text-secondary); }
+    :root[data-theme="dark"] .note strong { color: var(--text-primary); }
+    :root[data-theme="dark"] .dot.on { box-shadow: none; }
+    :root[data-theme="dark"] .log-warn { color: var(--warning); }
+    /* Progress bar: flat accent fill. */
+    :root[data-theme="dark"] .boot-fill { background: var(--accent-primary); box-shadow: none; }
+    :root[data-theme="dark"] .boot-logo .accent { background: none; -webkit-text-fill-color: var(--accent-secondary); color: var(--accent-secondary); }
+    /* Neutral gray dropdown chevron instead of the purple one. */
+    :root[data-theme="dark"] select {
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a0a0a0' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    }
+
+    /* ----- Responsive ----- */
+    @media (max-width: 640px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .add-row { flex-direction: column; align-items: stretch; }
+      .card-select, .count-select, .count-input { width: 100%; }
+      .brand h1 { font-size: 23px; }
+    }
+
+    /* ----- How-to documentation ----- */
+    .howto-doc ol, .howto-doc ul { margin: 0; padding-left: 22px; }
+    .howto-doc li { color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin-bottom: 12px; }
+    .howto-doc li:last-child { margin-bottom: 0; }
+    .howto-doc ol { list-style: decimal; }
+    .howto-doc ul { list-style: disc; }
+    .howto-doc strong { color: var(--text-primary); font-weight: 600; }
+    .howto-doc code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; color: var(--text-primary); background: var(--glass-bg); border: 1px solid var(--hairline); border-radius: 6px; padding: 1px 6px; }
+    .howto-doc code.howto-shape { display: block; margin: 8px 0; padding: 10px 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+  <div id="boot">
+    <div class="boot-logo">Statement <span class="accent">Studio</span></div>
+    <div class="boot-sub">Setting up your private, on-device analyzer…</div>
+    <div class="boot-bar-wrap">
+      <div class="boot-track"><div id="bootFill" class="boot-fill"></div></div>
+      <div class="boot-label">
+        <span id="bootMsg">Starting up…</span>
+        <span id="bootPct" class="boot-pct">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <header>
+    <div class="brand">
+      <h1>Statement Studio</h1>
+      <div class="sub">100% local &amp; free. Your statements never leave this machine.</div>
+    </div>
+    <div class="header-right">
+      <div class="mode-toggle" id="modeToggle">
+        <button class="mode-toggle-option" data-mode="light">&#9728; Light</button>
+        <button class="mode-toggle-option active" data-mode="dark">&#9789; Dark</button>
+      </div>
+      <nav class="tabs-nav">
+        <button id="navDashboard" class="nav-tab active">Dashboard</button>
+        <button id="navSettings" class="nav-tab">Settings</button>
+        <button id="navHowto" class="nav-tab">How to</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- ============================ DASHBOARD ============================ -->
+    <section id="dashboardView">
+      <div class="conn-bar glass">
+        <div class="conn-status">
+          <span id="connDot" class="dot off"></span>
+          <span id="connText">Not connected</span>
+          <span id="connMeta" class="conn-meta"></span>
+        </div>
+        <div class="conn-actions">
+          <button id="connectBtn" class="btn-secondary">Connect Gmail</button>
+        </div>
+      </div>
+      <div class="auth-note">&#128274; Google sign-in lasts about <strong>1 hour</strong>. When it expires you'll be asked to reconnect before fetching again.</div>
+
+      <div class="panel glass">
+        <div class="panel-top">
+          <div class="section-label" style="margin-bottom:0;">Step 1 · Choose your cards</div>
+          <button id="clearAllBtn" class="btn-clear" disabled>Clear all</button>
+        </div>
+        <div class="add-row">
+          <div class="add-field">
+            <label class="field" for="cardSelect">Saved card</label>
+            <select id="cardSelect" class="card-select"></select>
+          </div>
+          <button id="addToHomeBtn" class="btn-secondary">+ Add card</button>
+        </div>
+        <div id="activeCards" class="chips"></div>
+
+        <div class="add-row controls-row">
+          <div class="add-field">
+            <label class="field" for="countSelect">Step 2 · Statements per card</label>
+            <select id="countSelect" class="count-select"></select>
+          </div>
+          <div class="add-field">
+            <label class="field" for="lookbackInput">Look-back (months)</label>
+            <input id="lookbackInput" class="count-input" type="number" min="1" max="24" placeholder="6" />
+          </div>
+        </div>
+        <div class="caption" style="margin-top:0;">This many recent statements are fetched <strong>for each selected card</strong>, going back at most the chosen number of months.</div>
+
+        <div class="fetch-row">
+          <button id="fetchBtn" class="btn-primary pulse" disabled>Step 3 · Fetch statements</button>
+          <span id="status" class="status-text">Idle.</span>
+        </div>
+      </div>
+
+      <div id="emptyState" class="empty-state">
+        <div class="empty-emoji">&#128202;</div>
+        <div class="empty-title">No statements analysed yet</div>
+        <div class="empty-sub">Connect Gmail, add a saved card, then hit <strong>Fetch statements</strong>.</div>
+      </div>
+
+      <div id="results" class="hidden">
+        <!-- Combined summary (overview) -->
+        <div class="section-label">Combined summary</div>
+        <div id="kpis" class="kpi-grid"></div>
+        <div class="note">
+          <strong>Note:</strong> "Total spent" (sum of this period's transactions) and
+          "Total amount due" can differ — the amount due also reflects previous-balance
+          carry-over or extra payments from last month adjusted into this cycle.
+        </div>
+        <div class="charts-grid">
+          <div class="chart-box glass" id="boxByCard"><div class="chart-wrap"><canvas id="chartByCard"></canvas></div></div>
+          <div class="chart-box glass" id="boxByMonth"><div class="chart-wrap"><canvas id="chartByMonth"></canvas></div></div>
+        </div>
+
+        <!-- Statement-month → card breakdown with expandable transactions -->
+        <div class="section-label" style="margin-top:8px;">By statement month</div>
+        <div id="monthBreakdown"></div>
+      </div>
+    </section>
+
+    <!-- ============================ SETTINGS ============================ -->
+    <section id="settingsView" class="hidden">
+      <div class="panel glass">
+        <div class="section-label">Google connection</div>
+        <div class="full-input">
+          <label class="field" for="clientIdInput">Step 1 · Google OAuth Client ID</label>
+          <input id="clientIdInput" placeholder="xxxxxx.apps.googleusercontent.com" />
+        </div>
+        <div class="fetch-row" style="margin-top:0;border-top:none;padding-top:0;">
+          <button id="connectBtnSettings" class="btn-primary">Step 2 · Connect Gmail</button>
+          <span id="connStatusSettings" class="status-text"></span>
+        </div>
+        <div class="auth-note" style="margin-top:16px;margin-bottom:0;">&#128274; The Gmail connection lasts ~1 hour, then you'll need to reconnect. Nothing is stored on any server.</div>
+      </div>
+
+      <div class="panel glass">
+        <div class="section-label">Saved cards</div>
+        <div class="caption" style="margin-top:-6px;margin-bottom:14px;">
+          The app always restricts to emails that carry a <strong>PDF attachment</strong>.
+          On top of that, match each card by its <strong>sender address</strong>, a
+          <strong>subject substring</strong>, or both — enable whichever you like with the
+          checkboxes (at least one is required). If a card's statements arrive from
+          <strong>different senders across months</strong>, turn on <strong>Multiple senders</strong>
+          and list each address (one per line).
+        </div>
+        <div class="table-scroll-x">
+          <table class="cards">
+            <thead>
+              <tr>
+                <th>Label</th><th>Last 4 digits</th><th>Bank</th><th>Sender email match</th>
+                <th>Subject match</th><th>PDF password</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="cardsBody"></tbody>
+          </table>
+        </div>
+        <div class="add-row" style="margin-top:16px;margin-bottom:0;">
+          <button id="addCardBtn" class="btn-secondary">+ Add card</button>
+          <button id="saveSettingsBtn" class="btn-primary">Save settings</button>
+          <span id="savedFlash" class="saved-flash">Saved</span>
+        </div>
+        <div class="footnote">&#128274; Passwords &amp; Client ID are stored only in this browser's localStorage, on your machine.</div>
+      </div>
+    </section>
+
+    <!-- ============================ HOW TO ============================ -->
+    <section id="howtoView" class="hidden">
+      <div class="howto-doc">
+        <div class="panel glass">
+          <div class="section-label">Get your Google OAuth Client ID</div>
+          <div class="caption" style="margin-top:-6px;margin-bottom:14px;">
+            This lets the app read your Gmail statement PDFs. It's free, no credit card required, and everything stays in your browser.
+          </div>
+          <ol>
+            <li>Open the Google Cloud Console at <code>console.cloud.google.com</code> and sign in.</li>
+            <li>Create a project: click the project dropdown (top bar) &rarr; <strong>New Project</strong> &rarr; name it (e.g. "Statement Analyzer") &rarr; <strong>Create</strong>, then select it.</li>
+            <li>Enable the Gmail API: left menu &rarr; <strong>APIs &amp; Services</strong> &rarr; <strong>Library</strong> &rarr; search "Gmail API" &rarr; open it &rarr; <strong>Enable</strong>.</li>
+            <li>Configure the OAuth consent screen: <strong>APIs &amp; Services</strong> &rarr; <strong>OAuth consent screen</strong> &rarr; choose <strong>External</strong> &rarr; <strong>Create</strong>. Fill <strong>App name</strong>, <strong>User support email</strong>, and <strong>Developer contact email</strong> &rarr; <strong>Save and Continue</strong>. On the <strong>Scopes</strong> step, just <strong>Save and Continue</strong>. On <strong>Test users</strong>, click <strong>Add Users</strong> and add your own Gmail address (and any others who will use the app) &rarr; <strong>Save</strong>. (The app stays in "Testing" mode; only listed test users can connect.)</li>
+            <li>Create the credential: <strong>APIs &amp; Services</strong> &rarr; <strong>Credentials</strong> &rarr; <strong>Create Credentials</strong> &rarr; <strong>OAuth client ID</strong> &rarr; Application type: <strong>Web application</strong> &rarr; give it a name. Under "Authorized JavaScript origins" click <strong>Add URI</strong> and enter the EXACT origin where you open this app (for local use, e.g. <code>http://localhost:8000</code>) &rarr; <strong>Create</strong>.</li>
+            <li>Copy the Client ID (it looks like <code>1234567890-abc.apps.googleusercontent.com</code>).</li>
+            <li>Go to the <strong>Settings</strong> tab &rarr; paste it into "Step 1 &middot; Google OAuth Client ID" &rarr; <strong>Save settings</strong> &rarr; click "Step 2 &middot; Connect Gmail" and grant read-only Gmail access.</li>
+          </ol>
+          <div class="section-label" style="margin-top:20px;">Tips</div>
+          <ul>
+            <li>The Authorized JavaScript origin must match your URL exactly (scheme + host + port). If you open the file via <code>file://</code>, serve it instead with <code>python3 -m http.server 8000</code> and add <code>http://localhost:8000</code>.</li>
+            <li>If you see "Access blocked / app isn't verified", make sure your email is added as a <strong>Test user</strong> (or publish the consent screen).</li>
+            <li>Your Client ID, tokens and PDF passwords are stored only in your browser's <code>localStorage</code> &mdash; nothing is sent anywhere except Google.</li>
+          </ul>
+        </div>
+
+        <div class="panel glass">
+          <div class="section-label">Add a new bank's extraction logic (e.g. SBI)</div>
+          <div class="caption" style="margin-top:-6px;margin-bottom:14px;">
+            Statements are parsed entirely in your browser (Python via Pyodide) by per-bank parsers. Banks without a custom parser fall back to a best-effort generic parser, which may misread totals/transactions &mdash; so add a dedicated parser for full accuracy.
+          </div>
+          <ol>
+            <li>In <strong>Settings</strong>, add the card with the correct <strong>Bank</strong> selected, then <strong>Fetch</strong> once. Open your browser's DevTools Console &mdash; the raw extracted text of each statement is printed there (look for a block labelled <code>RAW EXTRACTED TEXT</code>). Copy that text for one sample statement.</li>
+            <li>Open this project in an AI coding editor (e.g. Cursor) and ask it, pasting the raw text: <em>"Add an extraction parser for &lt;BANK&gt; credit card statements in <code>py/parsers.py</code>. Here is the raw extracted statement text: &lt;paste&gt;. Follow the same normalized output shape as <code>parse_icici</code> / <code>parse_hdfc</code>, and register it in <code>_REGISTRY</code>."</em></li>
+            <li>The only file to modify is <code>py/parsers.py</code>. The agent should implement a function <code>parse_&lt;bank&gt;(extracted, card_label)</code> that returns the normalized shape:
+              <code class="howto-shape">{ "card", "bank", "transactions": [{ "date" (YYYY-MM-DD), "merchant", "amount", "type" ("debit"|"credit"), "card", "category" }], "summary": { "card", "bank", "totalDue", "minDue", "dueDate", "statementPeriod" }, "error" }</code>
+              and add an entry to the <code>_REGISTRY</code> dict (keyed by the uppercase bank code, e.g. <code>"SBI"</code>) so <code>parse_statement</code> dispatches to it.</li>
+            <li>Reload the app. Dispatch is by the card's <strong>Bank</strong> field, so the new bank automatically uses the new parser &mdash; no other files need changing.</li>
+          </ol>
+          <div class="footnote">The existing <code>parse_hdfc</code> and <code>parse_icici</code> in <code>py/parsers.py</code> are good reference implementations to point the agent at.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="panel glass" style="margin-top: 8px;">
+      <div class="section-label">Activity log</div>
+      <div id="log"></div>
+    </div>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
